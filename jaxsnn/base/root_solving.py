@@ -5,6 +5,9 @@
 
 import jax
 import jax.numpy as jnp
+from jaxsnn.base.types import ArrayLike
+import tree_math
+import dataclasses
 
 
 def linear_interpolation(f_a, f_b, a, b, x):
@@ -13,16 +16,6 @@ def linear_interpolation(f_a, f_b, a, b, x):
 
 def linear_interpolated_root(f_a, f_b, a, b):
     return (a * f_b - b * f_a) / f_b - f_a
-
-
-def illinois_method():
-    """
-    Reference:
-    Kathie L. Hiebert and Lawrence F. Shampine, Implicitly
-    Defined Output Points for Solutions of ODEs, Sandia National
-    Laboratory Report SAND80-0180, February 1980.
-    """
-    pass
 
 
 def newton_1d(f, x0):
@@ -78,6 +71,12 @@ def bisection(f, x_min, x_max, tol):
     as sign(f(x_min)) != sign(f(x_max)).
 
     NOTE: We do not check the precondition sign(f(x_min)) != sign(f(x_max)) here
+
+    f: function for which we want to find a root in the interval [x_min,x_max].
+    x_min: lower bound
+    x_max: upper bound
+    eps: resolution or tolerance of the root finding method
+
     """
     initial_state = (0, x_min, x_max)  # (iteration, x)
 
@@ -103,3 +102,52 @@ def bisection(f, x_min, x_max, tol):
         body,
         initial_state,
     )[1]
+
+
+
+@dataclasses.dataclass
+@tree_math.struct
+class State:
+    a: ArrayLike
+    b: ArrayLike
+    fa: ArrayLike
+    fb: ArrayLike
+
+
+def illinois_method(f, a, b, eps):
+    """Illinois root finding method
+
+    This is a modified version of the secant method. Some version of this is
+    used in the SUNDIALS suite.
+
+    Reference: Kathie L. Hiebert and Lawrence F. Shampine, Implicitly Defined Output Points for Solutions of ODEs, Sandia National Laboratory Report SAND80-0180, February 1980.
+    TODO: We need to fully check edge cases and introduce a suitable set of benchmark problems.
+
+    f: function for which we want to find a root in the interval [a,b].
+    a: lower bound
+    b: upper bound
+    eps: resolution or tolerance of the root finding method
+
+    """
+    fa = f(a)
+    fb = f(b)
+    (a,fa,b,fb) = jax.lax.cond(jnp.abs(fa) > jnp.abs(fb), lambda: (b,fb,a,fa), lambda: (a,fa,b,fb))
+    init = State(a=a, b=b, fa=fa, fb=fb)
+
+    def cond(state: State):
+        return jnp.abs(state.b - state.a) > eps
+
+    def body_fun(state: State):
+        a = state.a
+        b = state.b
+        fa = state.fa
+        fb = state.fb  
+
+        c = a - (fa * (b - a)) / (fb - fa)
+        fc = f(c)
+        b, fb = jax.lax.cond(fa * fc <= 0, lambda: (a, fa), lambda: (b, 0.5 * fb))
+
+        state = State(a=c, b=b, fa=fc, fb=fb)
+        return state
+
+    return jax.lax.while_loop(cond, body_fun, init).a
