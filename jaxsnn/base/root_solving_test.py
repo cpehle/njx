@@ -61,9 +61,13 @@ ALL_TEST_PROBLEMS = [
     # )
 ]
 
-ALL_ROOT_SOLVING_METHODS=[
+ALL_BOUNDED_ROOT_METHODS=[
     root_solving.bisection,
     root_solving.illinois_method
+]
+
+ALL_GRADIENT_BASED_METHODS=[
+    root_solving.newton_1d
 ]
 
 class RootSolvingTest(parameterized.TestCase):
@@ -78,30 +82,32 @@ class RootSolvingTest(parameterized.TestCase):
         bound = bounds[0]
         expected = roots[-1]
         tol = 0.01
-        for solver in ALL_ROOT_SOLVING_METHODS:
+        for solver in ALL_BOUNDED_ROOT_METHODS:
             actual = solver(f,bound[0],bound[1],tol)
             onp.testing.assert_allclose(expected, actual, atol=tol)
 
 
-
-def test_bisection():
-    expected = math.sqrt(2)
-    f = lambda x: x**2 - 2
-
-    tol = 0.1
-    actual = root_solving.bisection(f, 0, 2, tol)
-    onp.testing.assert_allclose(expected, actual, atol=tol)
-
-    tol = 0.001
-    actual = root_solving.bisection(f, 0, 2, 0.001)
-    onp.testing.assert_allclose(expected, actual, atol=tol)
+    @parameterized.named_parameters(ALL_TEST_PROBLEMS)
+    def test_gradient_root_solving(
+        self,
+        f,
+        df,
+        bounds,
+        roots
+    ):
+        bound = bounds[0]
+        expected = roots[-1]
+        tol = 0.01
+        for solver in ALL_GRADIENT_BASED_METHODS:
+            actual = solver(f,bound[0], tol=tol)
+            onp.testing.assert_allclose(expected, actual, atol=tol)
 
 
 def test_newton_1d():
     expected = math.sqrt(2)
     f = lambda x: x**2 - 2
     tol = 0.1
-    actual = root_solving.newton_1d(f, 1.0)
+    actual = root_solving.newton_1d(f, 1.0, tol=tol)
     onp.testing.assert_allclose(actual, expected, atol=tol)
 
 

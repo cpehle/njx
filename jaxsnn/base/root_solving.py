@@ -18,25 +18,37 @@ def linear_interpolated_root(f_a, f_b, a, b):
     return (a * f_b - b * f_a) / f_b - f_a
 
 
-def newton_1d(f, x0):
-    initial_state = (0, x0)
+
+
+@dataclasses.dataclass
+@tree_math.struct
+class NewtonState:
+    it : int
+    x : ArrayLike
+
+
+def newton_1d(f, x0, tol):
+
+    initial_state = NewtonState(
+        it = 0, 
+        x = x0
+    )
 
     def cond(state):
-        it, x = state
-        return it < 10
+        return jnp.logical_and((jnp.abs(f(state.x)) > tol), state.it < 1e6)
 
     def body(state):
-        it, x = state
+        it, x = state.it, state.x
         fx, dfx = f(x), jax.grad(f)(x)
-        step = fx / dfx
-        new_state = it + 1, x - step
+        step = fx / (dfx + 0.0001)
+        new_state = NewtonState(it + 1, x - step)
         return new_state
 
     return jax.lax.while_loop(
         cond,
         body,
         initial_state,
-    )[1]
+    ).x
 
 
 def newton_nd(f, x0):
