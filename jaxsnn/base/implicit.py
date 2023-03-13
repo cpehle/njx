@@ -129,7 +129,7 @@ def backward_forward_euler_cde(
     def step_fn(u0, x0):
         g = u0 + dt * F(u0, x0)
         u1 = G_inv(g, dt)
-        return u1
+        return u1, u1
 
     return step_fn
 
@@ -197,7 +197,7 @@ def crank_nicolson_rk2_cde(
         u1 = G_inv(g + dt * h1, 0.5 * dt)
         h2 = 0.5 * (F(u1, x0) + h1)
         u2 = G_inv(g + dt * h2, 0.5 * dt)
-        return u2
+        return u2, u2
 
     return step_fn
 
@@ -301,7 +301,7 @@ def low_storage_runge_kutta_crank_nicolson_cde(
             h = F(u, x) + β[k] * h
             µ = 0.5 * dt * (α[k + 1] - α[k])
             u = G_inv(u + γ[k] * dt * h + µ * G(u), µ)
-        return u
+        return u, u
 
     return step_fn
 
@@ -504,7 +504,7 @@ def imex_runge_kutta_cde(
         im_terms = dt * sum(b_im[j] * g[j] for j in range(num_steps) if b_im[j])
         y_next = y0 + ex_terms + im_terms
 
-        return y_next
+        return y_next, y_next
 
     return step_fn
 
