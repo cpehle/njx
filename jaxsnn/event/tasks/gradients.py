@@ -48,6 +48,7 @@ batched_solver = jax.vmap(solver, in_axes=(0, None))
 step_fn = partial(step, dynamics, batched_solver, transition, t_max)
 forward = trajectory(step_fn, 10)
 
+
 # minimal forward example
 def forward1(weights, input_spikes):
     t = 0

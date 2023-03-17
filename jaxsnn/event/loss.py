@@ -46,7 +46,6 @@ def loss_wrapper(
     weights: List[Weight],
     batch: Tuple[Spike, Array],
 ) -> Tuple[ArrayLike, Tuple[ArrayLike, List[Spike]]]:
-
     input_spikes, target = batch
     recording = apply_fn(weights, input_spikes)
     output = recording[-1]

@@ -38,7 +38,6 @@ def linear_dataset(
     correct_target_time: Optional[float] = None,
     wrong_target_time: Optional[float] = None,
 ) -> Dataset:
-
     if correct_target_time is None:
         correct_target_time = 0.5 * t_late
     if wrong_target_time is None:

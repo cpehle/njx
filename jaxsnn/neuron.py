@@ -15,7 +15,6 @@ class NeuronState:
 
 @dataclasses.dataclass
 class MultiCompartmentNeuronModel(time_stepping.ImplicitExplicitODE):
-
     d: ArrayLike
     u: ArrayLike
     p: ArrayLike

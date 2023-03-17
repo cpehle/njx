@@ -18,21 +18,15 @@ def linear_interpolated_root(f_a, f_b, a, b):
     return (a * f_b - b * f_a) / f_b - f_a
 
 
-
-
 @dataclasses.dataclass
 @tree_math.struct
 class NewtonState:
-    it : int
-    x : ArrayLike
+    it: int
+    x: ArrayLike
 
 
 def newton_1d(f, x0, tol):
-
-    initial_state = NewtonState(
-        it = 0, 
-        x = x0
-    )
+    initial_state = NewtonState(it=0, x=x0)
 
     def cond(state):
         return jnp.logical_and((jnp.abs(f(state.x)) > tol), state.it < 1e6)
@@ -52,7 +46,6 @@ def newton_1d(f, x0, tol):
 
 
 def newton_nd(f, x0):
-
     initial_state = (0, x0)
 
     def cond(state):
@@ -116,7 +109,6 @@ def bisection(f, x_min, x_max, tol):
     )[1]
 
 
-
 @dataclasses.dataclass
 @tree_math.struct
 class State:
@@ -143,7 +135,9 @@ def illinois_method(f, a, b, eps):
     """
     fa = f(a)
     fb = f(b)
-    (a,fa,b,fb) = jax.lax.cond(jnp.abs(fa) > jnp.abs(fb), lambda: (b,fb,a,fa), lambda: (a,fa,b,fb))
+    (a, fa, b, fb) = jax.lax.cond(
+        jnp.abs(fa) > jnp.abs(fb), lambda: (b, fb, a, fa), lambda: (a, fa, b, fb)
+    )
     init = State(a=a, b=b, fa=fa, fb=fb)
 
     def cond(state: State):
@@ -153,7 +147,7 @@ def illinois_method(f, a, b, eps):
         a = state.a
         b = state.b
         fa = state.fa
-        fb = state.fb  
+        fb = state.fb
 
         c = a - (fa * (b - a)) / (fb - fa)
         fc = f(c)

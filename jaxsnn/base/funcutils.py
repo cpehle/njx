@@ -112,6 +112,7 @@ def trajectory(
         (1) the final frame of the trajectory _before_ `post_process` is applied.
         (2) trajectory of length `steps` representing time evolution.
     """
+
     # TODO(shoyer): change the default to start_with_input=True, once we're sure
     # it works for training.
     def step(carry_in, _):
