@@ -4,7 +4,7 @@ import jax
 import jax.numpy as np
 from jaxsnn.functional.leaky_integrate_and_fire import LIFParameters, LIFState
 from jaxsnn.functional.threshold import heaviside
-from jaxsnn.base.types import Array, Spike
+from jaxsnn.base.types import Array, Spike, JaxArray
 
 
 def kernel(A, t, t0):
@@ -15,14 +15,13 @@ def f(A, t0, x0, t):
     return np.einsum("ijk, ik -> j", jax.vmap(partial(kernel, A, t))(t0), x0)
 
 
-def li_cell(A: Array, ts: Array, weights: Array, spikes: Spike) -> LIFState:
-
+def li_cell(A: Array, ts: Array, weights: JaxArray, spikes: Spike) -> LIFState:
     # don't integrate over inf spike times
     first_inf = np.searchsorted(spikes.time, 1_000_000, side="right")
     spikes = Spike(spikes.time[:first_inf], spikes.idx[:first_inf])
 
-    current = weights[spikes.idx] * np.where(spikes.idx == -1, 0.0, 1.0)
-    voltage = np.zeros(len(spikes.idx))
+    current = np.where(spikes.idx == -1, 0.0, weights.at(spikes.idx))
+    voltage = np.zeros_like(spikes.idx)
     xk = np.stack((voltage, current), axis=1)
     ys = jax.vmap(partial(f, A, spikes.time, xk))(ts)
     return LIFState(V=ys[:, 0], I=ys[:, 1])

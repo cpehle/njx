@@ -14,7 +14,7 @@ import tree_math
 PyTreeState = TypeVar("PyTreeState")
 ArrayLike = Union[jnp.ndarray, np.ndarray, float]
 Array = Union[jnp.ndarray, np.ndarray]
-JaxArray = Type[jnp.ndarray]
+JaxArray = Type[jnp.ndarray[int]]
 
 
 @dataclasses.dataclass
@@ -27,7 +27,7 @@ class Spike:
     def shape(self):
         return self.time.shape
 
-    def __getitem__(self, key) -> Spike:
+    def __getitem__(self, key: int) -> Spike:
         return Spike(self.time[key], self.idx[key])
 
 
