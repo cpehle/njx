@@ -5,6 +5,7 @@ JAXSNN reference documentation
    :maxdepth: 1
    :caption: Getting Started
 
+   introduction
    installation
 
 .. toctree::
@@ -16,12 +17,14 @@ JAXSNN reference documentation
    notebooks/passive_cable.ipynb
    notebooks/synapse_dynamics.ipynb
    notebooks/synaptic_transmission_models.ipynb
+   notebooks/event_based_snn.ipynb
 
 
 .. toctree::
    :maxdepth: 1
    :caption: Developer documentation
 
+   dev/development_setup.md
    dev/commit_convention.md
    dev/documentation.md
 
