@@ -14,7 +14,7 @@ import tree_math
 PyTreeState = TypeVar("PyTreeState")
 ArrayLike = Union[jnp.ndarray, np.ndarray, float]
 Array = Union[jnp.ndarray, np.ndarray]
-JaxArray = Type[jnp.ndarray[int]]
+JaxArray = Type[jnp.ndarray]
 
 
 @dataclasses.dataclass
