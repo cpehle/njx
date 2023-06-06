@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "jaxsnn"
 copyright = "2022, The JAXSNN authors."
 author = "The JAXSNN authors"
+language = "en"
 
 # The short X.Y version
 version = ""
@@ -117,7 +118,7 @@ napolean_use_rtype = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_book_theme"
+html_theme = "furo"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -214,7 +215,7 @@ texinfo_documents = [
         "JAXSNN Documentation",
         author,
         "JAXSNN",
-        "One line description of project.",
+        "Differentiable Simulation of Neuron Models in JAX.",
         "Miscellaneous",
     ),
 ]

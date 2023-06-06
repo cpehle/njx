@@ -14,6 +14,4 @@ We are using [pre-commit](https://pre-commit.com) to check commits before they h
 
 ## Code Review
 
-We are using Gerrit for code review. The server is a [https://gerrit.bioai.eu](https://gerrit.bioai.eu), if you are a new contributor talk to one of the maintainers to get an account and familiarise yourself with the review process that Gerrit imposes. 
-
-
+We are using Gerrit for code review. The server is a [https://gerrit.bioai.eu](https://gerrit.bioai.eu), if you are a new contributor talk to one of the maintainers to get an account and familiarise yourself with the review process that Gerrit imposes.
