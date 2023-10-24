@@ -69,9 +69,9 @@ def tree_matmul(d, u, p, b):
 
     N = d.shape[0]
 
-    init_val = TreeMatmulProblem(t=TreeMatrix(u=u, d=d, p=p), b=b, res=d * b)
+    init_val = TreeMatmulProblem(t=TreeMatrix(u=u, d=d, p=p), b=b, r=d * b)
 
-    return lax.fori_loop(1, N, body_fun, init_val).res
+    return lax.fori_loop(1, N, body_fun, init_val).r
 
 
 def hines_solver(d, u, p, b):
