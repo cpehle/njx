@@ -1,7 +1,7 @@
 import jax.numpy as np
 import jax
 from functools import partial
-from jaxsnn.event.functional import exponential_flow, step
+from jaxsnn.event.functional import exponential_flow, step_without_current
 from jaxsnn.event.root.ttfs import ttfs_solver
 from jaxsnn.event.leaky_integrate_and_fire import transition_without_recurrence
 from jaxsnn.functional.leaky_integrate_and_fire import LIFState, LIFParameters
@@ -42,7 +42,7 @@ def test_step():
     solver = partial(ttfs_solver, p.tau_mem, p.v_th)
     batched_solver = jax.vmap(solver, in_axes=(0, None))
     transition = partial(transition_without_recurrence, p)
-    step_fn = partial(step, dynamics, batched_solver, transition, t_max)
+    step_fn = partial(step_without_current, dynamics, batched_solver, transition, t_max)
     weights = WeightInput(np.zeros((n_input, n_hidden)))
     neuron_state = LIFState(np.zeros(n_hidden), np.zeros(n_hidden))
 
@@ -78,7 +78,7 @@ def test_step_no_transition():
     solver = partial(ttfs_solver, p.tau_mem, p.v_th)
     batched_solver = jax.vmap(solver, in_axes=(0, None))
     transition = partial(transition_without_recurrence, p)
-    step_fn = partial(step, dynamics, batched_solver, transition, t_max)
+    step_fn = partial(step_without_current, dynamics, batched_solver, transition, t_max)
     weights = WeightInput(np.ones((n_input, n_hidden)))
     neuron_state = LIFState(np.zeros(n_hidden), np.zeros(n_hidden))
 

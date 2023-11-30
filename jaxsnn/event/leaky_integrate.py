@@ -20,7 +20,7 @@ def li_cell(A: Array, ts: Array, weights: JaxArray, spikes: Spike) -> LIFState:
     first_inf = np.searchsorted(spikes.time, 1_000_000, side="right")
     spikes = Spike(spikes.time[:first_inf], spikes.idx[:first_inf])
 
-    current = np.where(spikes.idx == -1, 0.0, weights.at(spikes.idx))
+    current = np.where(spikes.idx == -1, 0.0, weights[spikes.idx])
     voltage = np.zeros_like(spikes.idx)
     xk = np.stack((voltage, current), axis=1)
     ys = jax.vmap(partial(f, A, spikes.time, xk))(ts)

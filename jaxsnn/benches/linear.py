@@ -3,9 +3,9 @@ from functools import partial
 from typing import List, Tuple
 
 import jax
+from jax import random
 import numpy as np
 import optax
-from jax import random
 
 from jaxsnn.base.types import Array, Spike, Weight
 from jaxsnn.event.compose import serial

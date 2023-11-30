@@ -17,6 +17,8 @@ def test_train():
     n_hidden = 10
     n_output = 2
     n_neurons = n_hidden + n_output
+    weight_mean = [3.0, 0.5]
+    weight_std = [1.6, 0.8]
 
     p = LIFParameters()
     t_late = p.tau_syn + p.tau_mem
@@ -25,7 +27,15 @@ def test_train():
 
     # declare net
     init_fn, apply_fn = serial(
-        RecurrentLIF(4, n_spikes=10, t_max=t_max, p=p, solver=solver),
+        RecurrentLIF(
+            4,
+            n_spikes=10,
+            t_max=t_max,
+            p=p,
+            solver=solver,
+            mean=weight_mean,
+            std=weight_std,
+        ),
         LIF(2, n_spikes=20, t_max=t_max, p=p, solver=solver),
     )
 

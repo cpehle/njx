@@ -9,7 +9,12 @@ from jaxsnn.event.adjoint_lif import (
     adjoint_transition_without_recurrence,
     adjoint_transition_with_recurrence,
 )
-from jaxsnn.event.functional import exponential_flow, step, trajectory
+from jaxsnn.event.functional import (
+    exponential_flow,
+    step,
+    step_without_current,
+    trajectory,
+)
 from jaxsnn.functional.leaky_integrate_and_fire import LIFParameters, LIFState
 from jaxsnn.event.adjoint_lif import step_bwd
 from jaxsnn.event.transition import (
@@ -49,7 +54,7 @@ def LIF(
     batched_solver = jax.vmap(solver, in_axes=(0, None))
     transition = partial(transition_without_recurrence, p)
 
-    step_fn = partial(step, dynamics, batched_solver, transition, t_max)
+    step_fn = partial(step_without_current, dynamics, batched_solver, transition, t_max)
     forward = trajectory(step_fn, n_spikes)
     initial_state = LIFState(np.zeros(n_hidden), np.zeros(n_hidden))
 
@@ -75,7 +80,7 @@ def RecurrentLIF(
     batched_solver = jax.vmap(solver, in_axes=(0, None))
     transition = partial(transition_with_recurrence, p)
 
-    step_fn = partial(step, dynamics, batched_solver, transition, t_max)
+    step_fn = partial(step_without_current, dynamics, batched_solver, transition, t_max)
 
     hidden_size = np.sum(np.array(layers))
     initial_state = LIFState(np.zeros(hidden_size), np.zeros(hidden_size))

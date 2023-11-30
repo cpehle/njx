@@ -133,6 +133,68 @@ def step(
     )
 
 
+def step_without_current(
+    dynamics: Callable,
+    solver: Callable,
+    tr_dynamics: Callable,
+    t_max: float,
+    input: Tuple[StepState, Weight, int],
+    *args: int,
+) -> Tuple[Tuple[StepState, Weight, int], Spike]:
+    """Determine the next spike (external or internal), and integrate the neurons to that point.
+    Args:
+        dynamics (Callable): Function describing neuron dynamics
+        solver (Callable): Parallel root solver
+        tr_dynamics (Callable): function describing the transition dynamics
+        t_max (float): Max time until which to run
+        weights (Weight): input and recurrent weights
+        input_spikes (Spike): input spikes (time and index)
+        state (StepState): (Neuron state, current_time, input_queue)
+    Returns:
+        Tuple[StepState, Spike]: New state after transition and spike for storing
+    """
+    state, weights, layer_start = input
+    prev_layer_start = layer_start - weights.input.shape[0]
+
+    pred_spikes = solver(state.neuron_state, t_max) + state.time
+    spike_idx = np.argmin(pred_spikes)
+
+    # determine spike nature and spike time
+    input_time = lax.cond(
+        state.input_queue.is_empty, lambda: t_max, lambda: state.input_queue.peek().time
+    )
+    t_dyn = np.minimum(pred_spikes[spike_idx], input_time)
+
+    # comparing only makes sense if exactly dt is returned from solver
+    spike_in_layer = pred_spikes[spike_idx] < input_time
+    no_event = t_dyn + 1e-6 > t_max
+    stored_idx = lax.cond(
+        no_event,
+        lambda: -1,
+        lambda: lax.cond(
+            spike_in_layer,
+            lambda: spike_idx + layer_start,
+            lambda: state.input_queue.peek().idx,
+        ),
+    )
+    state = StepState(
+        neuron_state=dynamics(state.neuron_state, t_dyn - state.time),
+        time=t_dyn,
+        input_queue=state.input_queue,
+    )
+    transitioned_state = lax.cond(
+        no_event,
+        lambda *args: state,
+        tr_dynamics,
+        state,
+        weights,
+        spike_idx,
+        spike_in_layer,
+        prev_layer_start,
+    )
+    return (transitioned_state, weights, layer_start), Spike(t_dyn, stored_idx)
+
+
 def trajectory(
     dynamics: Callable, n_spikes: int
 ) -> Callable[[Any, Any, Any, Any], Spike]:
