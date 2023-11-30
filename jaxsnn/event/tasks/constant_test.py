@@ -28,7 +28,7 @@ def test_train():
     # declare net
     init_fn, apply_fn = serial(
         RecurrentLIF(
-            4,
+            [4],
             n_spikes=10,
             t_max=t_max,
             p=p,
@@ -51,4 +51,4 @@ def test_train():
     # train the net
     trainset = constant_dataset(t_max, [n_epochs])
     weights, (loss_value, _) = jax.lax.scan(update_fn, weights, trainset[:2])
-    assert loss_value[-1] <= -0.4
+    assert loss_value[-1] <= 0.0

@@ -28,7 +28,7 @@ def test_tree_to_matrix_2():
     morph = gm.y_geometry()
     tm = gm.compute_tree_matrix(morph)
 
-    expected = [[-1, 1, 0, 0], [1, -3, 1, 1], [0, 1, -1, 0], [0, 1, 0, -1]]
+    expected = [[-2, 1, 0, 0], [1, -3, 1, 1], [0, 1, -2, 0], [0, 1, 0, -2]]
 
     actual = tree_to_matrix(tm.d, tm.u, tm.p)
     onp.testing.assert_allclose(expected, actual)

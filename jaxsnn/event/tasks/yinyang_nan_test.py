@@ -80,4 +80,4 @@ def test_nans():
     (loss, recording), grad = jax.value_and_grad(loss_fn, has_aux=True)(
         params, batch[0]
     )
-    assert not np.isnan(np.mean(grad[0]))
+    assert not np.isnan(np.mean(grad[0].input))

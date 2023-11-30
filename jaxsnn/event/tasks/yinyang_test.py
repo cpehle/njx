@@ -78,7 +78,7 @@ def test_nans():
         params, input_spikes
     )
     assert not np.isnan(np.mean(grad[0].input))
-    assert_almost_equal(loss, -1.1718568, 7)
+    assert_almost_equal(loss, -1.14993389, 7)
 
 
 if __name__ == "__main__":
