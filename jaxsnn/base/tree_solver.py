@@ -60,8 +60,6 @@ def tree_matmul(d, u, p, b):
     diag = d * b
 
     """
-    # TODO: Dummy implementation
-
     def body_fun(i, val):
         val.r = val.r.at[i].add(val.t.u[i - 1] * val.b[val.t.p[i]])
         val.r = val.r.at[val.t.p[i]].add(val.t.u[i - 1] * val.b[i])
