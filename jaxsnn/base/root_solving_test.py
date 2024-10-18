@@ -6,10 +6,9 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from jax.config import config
-
 import numpy as onp
 import jax.numpy as np
+import jax
 import math
 
 import jaxsnn.base.root_solving as root_solving
@@ -88,12 +87,13 @@ class RootSolvingTest(parameterized.TestCase):
 
 def test_newton_1d():
     expected = math.sqrt(2)
-    f = lambda x: x**2 - 2
+    def f(x): 
+        return x**2 - 2
     tol = 0.1
     actual = root_solving.newton_1d(f, 1.0, tol=tol)
     onp.testing.assert_allclose(actual, expected, atol=tol)
 
 
 if __name__ == "__main__":
-    config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", True)
     absltest.main()

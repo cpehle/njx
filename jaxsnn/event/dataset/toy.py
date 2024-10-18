@@ -30,7 +30,7 @@ def constant_dataset(t_max: float, shape: List[int]) -> Dataset:
 
 
 def linear_dataset(
-    rng: random.KeyArray,
+    rng: Array,
     t_late: float,
     shape: List[int],
     mirror: bool = True,
@@ -85,7 +85,7 @@ def linear_dataset(
 
 
 def circle_dataset(
-    rng: random.KeyArray,
+    rng: Array,
     tau_syn: float,
     shape: List[int],
     mirror: bool = True,
@@ -134,7 +134,7 @@ def circle_dataset(
 
 
 def yinyang_dataset(
-    rng: random.KeyArray,
+    rng: Array,
     t_late: float,
     shape: List[int],
     mirror: bool = True,

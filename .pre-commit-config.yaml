@@ -20,7 +20,7 @@ repos:
     hooks:
       - id: mypy
         files: (jaxsnn/)
-        additional_dependencies: [jaxlib==0.3.24]
+        additional_dependencies: [jaxlib==0.4.31]
 
   - repo: local
     hooks:

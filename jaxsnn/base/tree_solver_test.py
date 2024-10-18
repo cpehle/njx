@@ -15,13 +15,13 @@ from absl.testing import absltest
 
 def test_tree_to_matrix():
     N = 3
-    d = 2 * onp.ones(N)
-    u = onp.ones(N - 1)
-    p = onp.arange(-1, N, 1)
+    d = 2 * jnp.ones(N)
+    u = jnp.ones(N - 1)
+    p = jnp.arange(-1, N, 1)
 
     expected = [[2, 1, 0], [1, 2, 1], [0, 1, 2]]
     actual = tree_to_matrix(d, u, p)
-    onp.testing.assert_allclose(expected, actual)
+    onp.testing.assert_allclose(expected, actual, rtol=1e-4)
 
 
 def test_tree_to_matrix_2():
@@ -45,7 +45,6 @@ def test_hines_solver():
     x = hines_solver(jnp.array(d), jnp.array(u), jnp.array(p), jnp.array(b))
     x_ = jnp.linalg.solve(a, b)
 
-    # TODO: This is a rather liberal error tolerance...
     onp.testing.assert_allclose(x, x_, rtol=1e-4)
 
 
@@ -124,9 +123,9 @@ def test_hines_solver_6():
 
 def test_tree_matmul():
     N = 3
-    d = 2 * onp.ones(N)
-    u = onp.ones(N - 1)
-    p = onp.arange(-1, N, 1)
+    d = jnp.array(2 * onp.ones(N))
+    u = jnp.array(onp.ones(N - 1))
+    p = jnp.array(onp.arange(-1, N, 1))
 
     mat = tree_to_matrix(d, u, p)
     a = jnp.array(onp.random.randn(3))

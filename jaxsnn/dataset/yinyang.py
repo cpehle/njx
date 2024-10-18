@@ -43,7 +43,7 @@ get_class_batched = vmap(get_class, in_axes=(0, None, None))
 class YinYangDataset:
     def __init__(
         self,
-        key: random.KeyArray,
+        key: Array,
         size: int = 1000,
         r_small: float = 0.1,
         r_big: float = 0.5,
@@ -90,7 +90,7 @@ class YinYangDataset:
         return len(self.classes)
 
 
-def DataLoader(dataset, batch_size: int, rng: Optional[random.KeyArray]):
+def DataLoader(dataset, batch_size: int, rng: Optional[Array]):
     permutation = (
         random.permutation(rng, len(dataset))
         if rng is not None

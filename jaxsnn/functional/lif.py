@@ -2,6 +2,7 @@ from functools import partial
 from typing import NamedTuple
 
 import jax.numpy as np
+import jax
 from jax import jit, random
 from jax.lax import scan
 

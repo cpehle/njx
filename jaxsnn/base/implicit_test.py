@@ -18,13 +18,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import jax
 from jax import tree_util
-from jax.config import config
 import jax.numpy as jnp
 from jaxsnn.base import funcutils
 from jaxsnn.base import implicit as time_stepping
 import numpy as np
 
-config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 
 def harmonic_oscillator(x0, t):

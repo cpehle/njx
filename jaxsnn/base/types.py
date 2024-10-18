@@ -68,6 +68,8 @@ class InputQueue:
         return jax.lax.cond(self.is_empty, lambda: default, lambda: self.peek().time)
 
 
+
+
 State = TypeVar("State")
 
 

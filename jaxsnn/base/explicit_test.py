@@ -17,7 +17,6 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 import jax
-from jax.config import config
 import jax.numpy as jnp
 from jaxsnn.base import funcutils
 import numpy as np
@@ -83,5 +82,5 @@ class TimeSteppingTest(parameterized.TestCase):
 
 
 if __name__ == "__main__":
-    config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", True)
     absltest.main()

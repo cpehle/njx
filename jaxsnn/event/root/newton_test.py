@@ -8,7 +8,7 @@ from numpy.testing import assert_almost_equal
 from jaxsnn.event.leaky_integrate import LIFParameters, LIFState
 from jaxsnn.event.root.newton import newton_solver
 
-config.update("jax_debug_nans", True)
+jax.config.update("jax_debug_nans", True)
 
 
 def get_lif_dynamics():

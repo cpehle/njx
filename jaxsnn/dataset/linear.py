@@ -3,7 +3,7 @@ from typing import Optional
 import jax.numpy as np
 import matplotlib.pyplot as plt
 from jax import random, vmap
-
+from jaxsnn.base.types import Array
 
 def get_class(coords):
     return np.where(coords[0] < coords[1], 1, 0)
@@ -15,7 +15,7 @@ get_class_batched = vmap(get_class)
 class LinearDataset:
     def __init__(
         self,
-        key: random.KeyArray,
+        key: Array,
         size: int = 1000,
     ):
         """
@@ -57,7 +57,7 @@ class LinearDataset:
         return len(self.classes)
 
 
-def DataLoader(dataset, batch_size: int, rng: Optional[random.KeyArray]):
+def DataLoader(dataset, batch_size: int, rng: Optional[Array]):
     permutation = (
         random.permutation(rng, len(dataset))
         if rng is not None

@@ -58,7 +58,7 @@ def LIF(
     forward = trajectory(step_fn, n_spikes)
     initial_state = LIFState(np.zeros(n_hidden), np.zeros(n_hidden))
 
-    def init_fn(rng: jax.random.KeyArray, input_shape: int):
+    def init_fn(rng: Array, input_shape: int):
         return n_hidden, WeightInput(
             jax.random.normal(rng, (input_shape, n_hidden)) * std + mean
         )
@@ -86,7 +86,7 @@ def RecurrentLIF(
     initial_state = LIFState(np.zeros(hidden_size), np.zeros(hidden_size))
 
     def init_fn(
-        rng: jax.random.KeyArray, input_size: int
+        rng, input_size: int
     ) -> tuple[int, WeightRecurrent]:
         assert len(layers) >= 1
 

@@ -19,7 +19,7 @@ get_class_batched = vmap(get_class, in_axes=(0, None, None))
 class CircleDataset:
     def __init__(
         self,
-        key: random.KeyArray,
+        key: Array,
         size: int = 1000,
         radius: float = 0.25,
         center: Tuple[float, float] = (0.5, 0.5),
@@ -65,7 +65,7 @@ class CircleDataset:
         return len(self.classes)
 
 
-def DataLoader(dataset, batch_size: int, rng: Optional[random.KeyArray]):
+def DataLoader(dataset, batch_size: int, rng: Optional[Array]):
     permutation = (
         random.permutation(rng, len(dataset))
         if rng is not None

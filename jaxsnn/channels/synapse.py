@@ -31,7 +31,11 @@ class SynapseParameters:
     gamma: ArrayLike = 0.062
     e: ArrayLike = 0.0
     mg: ArrayLike = 0.0
-    mg_dep: ArrayLike = 3.57
+    mg_dep: ArrayLike = 3.57 #  Jahr & Stevens 1990
+
+# mggate kinetics - Jahr & Stevens 1990
+
+# mggate = 1 / (1 + exp(0.08  (/mV) * -(v)) * (mg / 3.57 (mM)))
 
 
 def weight_factor(tau_fast, tau_slow):
@@ -99,3 +103,6 @@ basket_gaba_parameters = SynapseParameters(
 martinotti_gaba_parameters = SynapseParameters(
     g_max=0.5e-3, tau_r=2.0, tau_d=23.0, mg=0.0, e=-75  # uS
 )
+
+
+

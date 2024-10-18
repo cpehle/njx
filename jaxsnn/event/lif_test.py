@@ -17,9 +17,8 @@ from jaxsnn.event.leaky_integrate_and_fire import (
 )
 from jaxsnn.event.loss import loss_and_acc, loss_wrapper, mse_loss
 from jaxsnn.event.root import ttfs_solver
-from jax.config import config
 
-config.update("jax_debug_nans", True)
+jax.config.update("jax_debug_nans", True)
 
 
 def main():

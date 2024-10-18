@@ -1,7 +1,6 @@
 from matplotlib.lines import Line2D
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import matplotlib.animation as animation
 
 import numpy as onp

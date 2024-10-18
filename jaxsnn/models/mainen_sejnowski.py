@@ -1,11 +1,13 @@
 from jaxsnn.channels.common import channel_dynamics
 import jaxsnn.base.implicit as implicit
+import jaxsnn.base.funcutils as funcutils
 import jaxsnn.base.tree_solver as tree_solver
 
 import jax.numpy as jp
 import tree_math
 import dataclasses
 import jax
+from functools import partial
 
 @tree_math.struct
 class Point:
@@ -26,39 +28,32 @@ class ChannelState:
     m : jp.ndarray
     h : jp.ndarray
 
-@tree_math.struct
-class DendriticMembraneChannels:
-    na : ChannelState
-    ca : ChannelState
-    kv : ChannelState
-    kca : ChannelState
-
 @dataclasses.dataclass
 @tree_math.struct
-class DendriticState:
-    ca_i : jp.ndarray
-    channels : DendriticMembraneChannels
-
-@tree_math.struct
-class SomaticMembraneChannels:
+class MembraneChannels:
     na : ChannelState
     ca : ChannelState
     kv : ChannelState
     km : ChannelState
     kca : ChannelState
 
-@tree_math.struct
-class SomaticState:
-    ca_i : jp.ndarray
-    channels : SomaticMembraneChannels
-
+@dataclasses.dataclass
 @tree_math.struct
 class ChannelParameter:
     E: float
     g: jp.ndarray
 
+@dataclasses.dataclass
 @tree_math.struct
-class SomaticParameters:
+class BoltzmannParameter:
+    v_half: float
+    k: float
+    a: float
+
+@tree_math.struct
+class NeuronParameters:
+    Ra : jp.ndarray
+    Cm : jp.ndarray
     na : ChannelParameter
     ca : ChannelParameter
     kv : ChannelParameter
@@ -68,131 +63,44 @@ class SomaticParameters:
     ca_infty : float
     tau_ca : float
 
-@tree_math.struct
-class DendriticParameters:
-    na : ChannelParameter
-    ca : ChannelParameter
-    kv : ChannelParameter
-    kca : ChannelParameter
-    leak : ChannelParameter
-    ca_infty : float
-    tau_ca : float
+def channel_alpha(p: ChannelParameter, v):
+    return p.a * (v - p.v_half) / (1 - jp.exp((p.v_half - v) / p.k))
+
+def channel_beta(p: ChannelParameter, v):
+    return -p.a * (v - p.v_half) / (1 - jp.exp((p.v_half - v) / p.k))
 
 @tree_math.struct
-class AxonhillockParameters:
-    na : ChannelParameter
-    kv : ChannelParameter
-    leak : ChannelParameter
-
-@tree_math.struct
-class AxonhillockMembraneChannels:
-    na : ChannelState
-    kv : ChannelState
-
-@tree_math.struct
-class AxonhillockState:
-    channels : AxonhillockMembraneChannels
-
-@tree_math.struct
-class CompartmentState:
-    soma : jp.ndarray
-    axon_hillock : jp.ndarray
-    dendritic : jp.ndarray
-
-@tree_math.struct
-class CompartmentParameter:
-    soma : jp.ndarray
-    axon_hillock : jp.ndarray
-    dendritic : jp.ndarray
-
-@tree_math.struct
-class NeuronParameters:
-    Ra : CompartmentParameter
-    Cm : CompartmentParameter
-    soma : SomaticParameters
-    dendritic : DendriticParameters
-    axon_hillock : AxonhillockParameters
-
-@tree_math.struct
-class MainenSejnowskiState:
-    v : CompartmentState
-    dendritic : DendriticState
-    somatic : SomaticState
-    axon_hillock : AxonhillockState
+class NeuronState:
+    v : jp.ndarray
+    ca_i : jp.ndarray
+    channels: MembraneChannels
 
 
+def x0(alpha, beta):
+    def x0(v):
+        return alpha(v) / (alpha(v) + beta(v))
+    return x0
 
-# def soma_parameters():
-#     return SomaticParameters(
-#         na = ChannelParameter(E=50, g=20),
-#         ca = ChannelParameter(E=140, g=0.3),
-#         kv = ChannelParameter(E=-90, g=3),
-#         km = ChannelParameter(E=-90, g=200),
-#         kca = ChannelParameter(E=-90, g=3),
-#         leak = ChannelParameter(E=-70, g=0.1),
-#         ca_infty = 0.1, # uM
-#         tau_ca = 200, # ms
-#     )
-# 
-# def dendritic_parameters():
-#     return DendriticParameters(
-#         na = ChannelParameter(E=50, g=20),
-#         ca = ChannelParameter(E=140, g=0.3),
-#         kv = ChannelParameter(E=-90, g=3),
-#         kca = ChannelParameter(E=-90, g=3),
-#         leak = ChannelParameter(E=-70, g=0.1),
-#         ca_infty = 0.1, # uM
-#         tau_ca = 200, # ms
-#     )
-# 
-# def axon_hillock_parameters():
-#     return AxonhillockParameters(
-#         na = ChannelParameter(E=50, g=30000),
-#         kv = ChannelParameter(E=-90, g=2000)
-#     )
+def tau(alpha, beta):
+    def tau(v):
+        return 1 / (alpha(v) + beta(v))
 
+    return tau
 
-# longitudinal resistance
-# RL = rL * dx / (2 * pi * r^2)
-# Rm = rm * / (2 * pi * r * dx)
-
-# E_Leak = -70 # mV
-# Ek = -90 # mV
-# ENa = 50 # mV
-# ECa = 140 # mV
-
-# specific membrane capacitance
-Cm = 0.75 # uF/cm^2
-# myelinated axon segments
-Cm = 0.02 # uF/cm^2  
-
-# specific membrane resistance
-Rm = 30000 # ohm.cm^2
-# axon segments
-Rm = 50 # ohm.cm^2
-# specific axial resistance
-Ra = 150 # ohm.cm
-# Conductance densities
-# Dendrites
-gNa = 20  # mS/cm^2
-gCa = 0.3 # mS/cm^2
-gKa = 3   # mS/cm^2
-gKv = 0.1 # mS/cm^2
-# Soma
-gKm = 200 # mS/cm^2
-# Axon hillock and initial segment
-gNa = 30000 # mS/cm^2
-gKv = 2000 # mS/cm^2
-# Nodes of Ranvier
-gNa = 30000 # mS/cm^2
-
+def channel_dynamics_from_equilibrium_and_timeconstant(x_infty, tau):
+    def dynamics(x, voltage):
+        return (x_infty(voltage) - x) / tau(voltage)
+    return dynamics
 
 # Sodium channel dynamics
+# alpha_na_activation = partial(alpha, BoltzmannParameter(v_half=-25, k=9.0, a=0.182))
+# beta_na_activation = partial(beta, BoltzmannParameter(v_half=-25, k=9.0, a=-0.124))
+
 def alpha_na_activation(v):
     return 0.182 * (v + 25) / (1 - jp.exp(-(v + 25) / 9))
 
 def beta_na_activation(v):
-    return -0.124 * (v + 25) / (1 - jp.exp(-(v + 25) / 9))
+    return -0.124 * (v + 25) / (1 - jp.exp((v + 25) / 9))
 
 def alpha_na_inactivation(v):
     return 0.024 * (v + 40) / (1 - jp.exp(-(v + 40) / 5))
@@ -201,19 +109,19 @@ def beta_na_inactivation(v):
     return -0.0091 * (v + 65) / (1 - jp.exp((v + 65) / 5))
 
 def b_na_infty_deactivation(v):
-    return 1 / (1 + jp.exp(-(v + 55) / 6.2))
+    return 1 / (1 + jp.exp((v + 55) / 6.2))
 
 na_activation_dynamics = channel_dynamics(alpha_na_activation, beta_na_activation)
-na_inactivation_dynamics = channel_dynamics(alpha_na_inactivation, beta_na_inactivation)
+na_inactivation_dynamics = channel_dynamics_from_equilibrium_and_timeconstant(b_na_infty_deactivation, tau(alpha_na_inactivation, beta_na_inactivation))
 
 def na_channel_dynamics(v, s):
     return ChannelState(
-        m=na_activation_dynamics(v, s.m),
-        h=na_inactivation_dynamics(v, s.n)
+        m=na_activation_dynamics(s.m, v),  #alpha_na_activation(v) * (1 - s.m) - beta_na_activation(v) * s.m,
+        h=na_inactivation_dynamics(s.h, v) # alpha_na_inactivation(v) * (1 - s.h) - beta_na_inactivation(v) * s.h
     )
 
 def I_Na(v, s, p):
-    return jp.pow(s.m,3) * s.h * p.gNa * (v - p.ENa)
+    return s.m**3 * s.h * p.g * (v - p.E)
 
 # Calcium channel dynamics
 def alpha_ca_activation(v):
@@ -223,7 +131,7 @@ def beta_ca_activation(v):
     return 0.94 * jp.exp(-(v + 75) / 17)
 
 def alpha_ca_deactivation(v):
-    return 4.57 * 10e-4 * jp.exp(-(v + 13) / 50)
+    return 4.57e-4 * jp.exp(-(v + 13) / 50)
 
 def beta_ca_deactivation(v):
     return 0.0065 / (1 + jp.exp(-(v + 15) / 28))
@@ -233,41 +141,41 @@ ca_deactivation_dynamics = channel_dynamics(alpha_ca_deactivation, beta_ca_deact
 
 def ca_channel_dynamics(v, s):
     return ChannelState(
-        m=ca_activation_dynamics(v, s.m),
-        h=ca_deactivation_dynamics(v, s.h)
+        m=alpha_ca_activation(v) * (1 - s.m) - beta_ca_activation(v) * s.m,
+        h=alpha_ca_deactivation(v) * (1 - s.h) - beta_ca_deactivation(v) * s.h
     )
 
 def I_Ca(v, s, p):
-    return jp.pow(s.m,2) * s.h * p.gCa * (v - p.ECa)
+    return s.m**2 * s.h * p.g * (v - p.E)
 
 # Potassium channel dynamics
 def alpha_kv_activation(v):
-    return 0.02 * (v - 25) / (1 - jp.exp(-(v + 25) / 9))
+    return 0.02 * (v - 25) / (1 - jp.exp(-(v - 25) / 9))
 
 def beta_kv_activation(v):
-    return -0.002 * (v - 25) / (1 - jp.exp(-(v + 25) / 9))
+    return -0.002 * (v - 25) / (1 - jp.exp((v - 25) / 9))
 
 kv_activation_dynamics = channel_dynamics(alpha_kv_activation, beta_kv_activation)
 
 def kv_channel_dynamics(v, s):
     return ChannelState(
-        m=kv_activation_dynamics(v, s.m),
-        h=0.0
+        m=kv_activation_dynamics(s.m, v),
+        h=jp.zeros_like(v)
     )
 
 def I_Kv(v, s, p):
-    return s.m * p.gKv * (v - p.Ek)
+    return s.m * p.g * (v - p.E)
 
 def alpha_km_activation(v):
-    return 1e-4 * (v + 30) / (1 - jp.exp(-(v + 30) / 9))
+    return 10**(-4) * (v + 30) / (1 - jp.exp(-(v + 30) / 9))
 
 def beta_km_activation(v):
-    return -1.1e-4 * (v + 30) / (1 - jp.exp(-(v + 30) / 9))
+    return -1*(10**(-4)) * (v + 30) / (1 - jp.exp((v + 30) / 9))
 
 def km_dynamics(v, s):
     return ChannelState(
         m=alpha_km_activation(v) * (1 - s.m) - beta_km_activation(v) * s.m,
-        h=0.0
+        h=jp.zeros_like(v)
     )
 
 def I_Km(v, s: ChannelState, p: ChannelParameter):
@@ -279,10 +187,10 @@ def alpha_kca_activation(v, ca_i):
 def beta_kca_activation(v, ca_i):
     return 0.02
 
-def kca_dynamics(v, s):
+def kca_dynamics(v, ca_i, s):
     return ChannelState(
-        m=alpha_kca_activation(v, s.ca_i) * (1 - s.m) - beta_kca_activation(v, s.ca_i) * s.m,
-        h=0.0
+        m=alpha_kca_activation(v, ca_i) * (1 - s.m) - beta_kca_activation(v, ca_i) * s.m,
+        h=jp.zeros_like(v)
     )
 
 def I_KCa(v, s: ChannelState, p: ChannelParameter):
@@ -291,59 +199,80 @@ def I_KCa(v, s: ChannelState, p: ChannelParameter):
 def I_L(v, p: ChannelParameter):
     return p.g * (v - p.E)
 
-def dendritic_channel_dynamics(v, s, p):
-    return DendriticMembraneChannels(
-            na=na_channel_dynamics(v, s.channels.na),
-            ca=ca_channel_dynamics(v, s.channels.ca),
-            kv=kv_channel_dynamics(v, s.channels.kv),
-            kca=kca_dynamics(v, s.channels.kca)
+def membrane_channel_dynamics(v, ca_i, s, p):
+    return MembraneChannels(
+            na=na_channel_dynamics(v, s.na),
+            ca=ca_channel_dynamics(v, s.ca),
+            kv=kv_channel_dynamics(v, s.kv),
+            km=km_dynamics(v, s.km),
+            kca=kca_dynamics(v, ca_i, s.kca)
     )
 
-def somatic_channel_dynamics(v, s, p):
-    return SomaticMembraneChannels(
-            na=na_channel_dynamics(v, s.channels.na),
-            ca=ca_channel_dynamics(v, s.channels.ca),
-            kv=kv_channel_dynamics(v, s.channels.kv),
-            km=km_dynamics(v, s.channels.km),
-            kca=kca_dynamics(v, s.channels.kca)
-    )
-
-
-def axonhillock_channel_dynamics(v, s, p):
-    return AxonhillockMembraneChannels(
-        na = na_channel_dynamics(v, s.channels.na),
-        kv = kv_channel_dynamics(v, s.channels.kv)
-    )
-
-def dendritic_current(v, s, p):
+def I_total(v, s, p):
     return (
-        I_Na(v, s.channels.na, p.na) +
-        I_Ca(v, s.channels.ca, p.ca) +
-        I_Kv(v, s.channels.kv, p.kv) +
-        I_KCa(v, s.channels.kca, p.kca) +
+        I_Na(v, s.na, p.na) +
+        I_Ca(v, s.ca, p.ca) +
+        I_Kv(v, s.kv, p.kv) +
+        I_Km(v, s.km, p.km) +
+        I_KCa(v, s.kca, p.kca) + 
         I_L(v, p.leak)
     )
 
-def somatic_current(v, s, p):
-    return (
-        I_Na(v, s.channels.na, p.na) +
-        I_Ca(v, s.channels.ca, p.ca) +
-        I_Kv(v, s.channels.kv, p.kv) +
-        I_Km(v, s.channels.km, p.km) +
-        I_KCa(v, s.channels.kca, p.kca) + 
-        I_L(v, p.leak)
+
+
+def na_equilibrium(v):
+    return ChannelState(
+        m=x0(alpha_na_activation, beta_na_activation)(v), 
+        h=b_na_infty_deactivation(v))
+
+def na_time_constant(v):
+    return ChannelState(
+        m=tau(alpha_na_activation, beta_na_activation)(v),
+        h=tau(alpha_na_inactivation, beta_na_inactivation)(v)
     )
 
-def axon_hillock_current(v, s, p):
-    return (
-        I_Na(v, s.channels.na, p.na) +
-        I_Kv(v, s.channels.kv, p.kv) + 
-        I_L(v, p.leak)
+def ca_equilibrium(v):
+    return ChannelState(
+        m=x0(alpha_ca_activation, beta_ca_activation)(v),
+        h=x0(alpha_ca_deactivation, beta_ca_deactivation)(v)
+    )
+
+def ca_time_constant(v):
+    return ChannelState(
+        m=tau(alpha_ca_activation, beta_ca_activation)(v),
+        h=tau(alpha_ca_deactivation, beta_ca_deactivation)(v)
+    )
+
+def kv_equilibrium(v):
+    return ChannelState(
+        m=x0(alpha_kv_activation, beta_kv_activation)(v),
+        h=jp.zeros_like(v)
+    )
+
+def km_equilibrium(v):
+    return ChannelState(
+        m=x0(alpha_km_activation, beta_km_activation)(v),
+        h=jp.zeros_like(v)
+    )
+
+def km_equilibrium(v):
+    return ChannelState(
+        m=x0(alpha_km_activation, beta_km_activation)(v),
+        h=jp.zeros_like(v)
+    )
+
+def kca_equilibrium(v, ca_i):
+    alpha = alpha_kca_activation
+    beta = beta_kca_activation
+
+    return ChannelState(
+        m=alpha(v, ca_i) / (alpha(v, ca_i) + beta(v, ca_i)),
+        h=jp.zeros_like(v)
     )
 
 # calcium dynamics
 def ca_i_dynamics(v, s, p):
-    return -1e5/2 * I_Ca(v, s.channels.ca, p.ca) - (s.ca_i - p.ca_infty) /  p.tau_ca
+    return -1e5/2.0 * I_Ca(v, s.channels.ca, p.ca) + (p.ca_infty - s.ca_i) /  p.tau_ca
 
 
 def conical_frustum_surface(segment : Segment):
@@ -360,8 +289,6 @@ def conical_frustum_length(segment : Segment):
     h = jp.linalg.norm(prox - dist, axis=0)
     return h # in um
 
-
-
 def number_of_segments(morph):
     num_segments = 0
     for i in range(morph.num_branches):
@@ -377,7 +304,6 @@ def compute_parent_index_array_for_segments(morph):
             parents = parents.at[child_index].set(segment_index)
         segment_index += len(morph.branch_segments(i))
     return parents
-
 
 def morphology_to_segments(morph, filter_by_tag=None):
     nb = morph.num_branches
@@ -417,79 +343,60 @@ def parent_to_adjacency(parents):
 @dataclasses.dataclass
 class NeuronModel(implicit.ImplicitExplicitODE):
     parameters: NeuronParameters
+    
     conductance_matrix: jp.ndarray
+    tm : tree_solver.TreeMatrix
 
     def explicit_terms(self, state):
-        return MainenSejnowskiState(
-            v = CompartmentState(
-                soma = 1/self.parameters.Cm.soma * somatic_current(state.v.somatic, state.somatic.channels, self.parameters.soma),
-                dendritic = 1/self.parameters.Cm.dendritic * dendritic_current(state.v.dendritic, state.dendritic.channels, self.parameters.dendritic),
-                axon_hillock = 1/self.parameters.Cm.axon_hillock * axon_hillock_current(state.v.axon_hillock, state.axon_hillock.channels, self.parameters.axon_hillock)                                            
-            ),
-            dendritic = DendriticState(
-                ca_i = ca_i_dynamics(state.dendritic.v, state.dendritic, self.parameters.dendritic),
-                channels = dendritic_channel_dynamics(state.dendritic.v, state.dendritic.channels, self.parameters.dendritic),
-            ),
-            somatic = SomaticState(
-                ca_i = ca_i_dynamics(state.somatic.v, state.somatic, self.parameters.somatic),
-                channels = somatic_channel_dynamics(state.somatic.v, state.somatic.channels, self.parameters.soma),
-            ),
-            axon_hillock = AxonhillockState(
-                channels = axonhillock_channel_dynamics(state.v.axon_hillock, state.axon_hillock.channels, self.parameters.axon_hillock)
-            )
+        return NeuronState(
+            v = -1/self.parameters.Cm * I_total(state.v, state.channels, self.parameters),
+            ca_i = jp.zeros_like(state.ca_i), # ca_i_dynamics(state.v, state, self.parameters),
+            channels = membrane_channel_dynamics(state.v, state.ca_i, state.channels, self.parameters),
         )
 
     def implicit_terms(self, state):
-        @tree_math.wrap
-        def multiply(voltage_state):
-            return self.conductance_matrix @ voltage_state
-
-        return MainenSejnowskiState(
-            v = multiply(state.v),
-            dendritic = DendriticState(
-                ca_i = 0,
-                channels = DendriticMembraneChannels(
-                    na = ChannelState(m=0, h=0),
-                    ca = ChannelState(m=0, h=0),
-                    kv = ChannelState(m=0, h=0),
-                    kca = ChannelState(m=0, h=0)
-                )
-            ),
-            somatic = SomaticState(
-                ca_i = 0,
-                channels = SomaticMembraneChannels(
-                    na = ChannelState(m=0, h=0),
-                    ca = ChannelState(m=0, h=0),
-                    kv = ChannelState(m=0, h=0),
-                    km = ChannelState(m=0, h=0),
-                    kca = ChannelState(m=0, h=0)
-                )
-            ),
-            axon_hillock = AxonhillockState(
-                channels = AxonhillockMembraneChannels(
-                    na = ChannelState(m=0, h=0),
-                    kv = ChannelState(m=0, h=0)
+        return NeuronState(
+            # v = 1/self.parameters.Cm * self.conductance_matrix @ state.v,
+            v = tree_solver.tree_matmul(self.tm.d, self.tm.u, self.tm.p, state.v), 
+            ca_i = jp.zeros_like(state.ca_i),
+            channels = MembraneChannels(
+                    na = ChannelState(m=jp.zeros_like(state.ca_i), h=jp.zeros_like(state.ca_i)),
+                    ca = ChannelState(m=jp.zeros_like(state.ca_i), h=jp.zeros_like(state.ca_i)),
+                    kv = ChannelState(m=jp.zeros_like(state.ca_i), h=jp.zeros_like(state.ca_i)),
+                    km = ChannelState(m=jp.zeros_like(state.ca_i), h=jp.zeros_like(state.ca_i)),
+                    kca = ChannelState(m=jp.zeros_like(state.ca_i), h=jp.zeros_like(state.ca_i))
                 )
             )
-        )
-
 
     def implicit_solve(self, state, step_size):
-        @tree_math.wrap
-        def solve(voltage_state):
-            return jax.linalg.solve(1 - step_size * self.conductance_matrix, voltage_state)
-
-        return MainenSejnowskiState(
-            v = solve(state.v),
-            dendritic = state.dendritic,
-            somatic = state.somatic,
-            axon_hillock = state.axon_hillock
+        return NeuronState(
+            # v = jp.linalg.solve(1 - step_size * 1/self.parameters.Cm * self.conductance_matrix, state.v),
+            v = tree_solver.hines_solver(1 - step_size * 1/self.parameters.Cm * self.tm.d, - step_size * 1/self.parameters.Cm * self.tm.u, self.tm.p, state.v), 
+            ca_i = state.ca_i,
+            channels = state.channels
         )
 
 @jax.jit
 def compute_conductance_matrix(axial_conductances, parents) -> jp.array:
     m = tree_solver.tree_to_matrix(jp.zeros_like(axial_conductances), -axial_conductances[1:], parents)
     return m-jp.diag(jp.sum(m, axis=1))
+
+
+@jax.jit
+def compute_tree_conductance_matrix(axial_conductances, parents) -> jp.array:
+    N = axial_conductances.shape[0]
+    u = -axial_conductances
+    diag = jp.zeros_like(u)
+    
+    def body_fun(i, diag):
+        diag = diag.at[i].add(u[i - 1])
+        diag = diag.at[parents[i]].add(u[i - 1])
+        return diag
+
+    diag = jax.lax.fori_loop(1, N, body_fun, diag)
+    return tree_solver.TreeMatrix(d=diag, u=u, p=parents)
+
+
 
 
 def test_morphology():
@@ -528,67 +435,144 @@ def test_morphology():
     axon_segments = jax.tree_util.tree_map(lambda x: x[axon_mask], segments)
     dendritic_segments = jax.tree_util.tree_map(lambda x: x[dendritic_mask], segments)
 
-    print(dendritic_segments.shape)
-    print(axon_segments.shape)
-
 
     # TODO: fix units
-    frustum_surface = conical_frustum_surface(soma_segments)    
-    soma_parameters = SomaticParameters(
-        na = ChannelParameter(E=50, g=20 * frustum_surface), # mS/cm^2 * um^2 = 10^4 mS
-        ca = ChannelParameter(E=140, g=0.3 * frustum_surface), # mS/cm^2 * um^2 = 10^4 mS
-        kv = ChannelParameter(E=-90, g=3 * frustum_surface), # mS/cm^2 * um^2 = 10^4 mS
-        km = ChannelParameter(E=-90, g=200 * frustum_surface), # mS/cm^2 * um^2 = 10^4 mS
-        kca = ChannelParameter(E=-90, g=3 * frustum_surface), # mS/cm^2 * um^2 = 10^4 mS 
-        leak = ChannelParameter(E=-70, g=1/30000.0 *frustum_surface), # mS/cm^2 * um^2 = 10^4 mS = 10 ohm^{-1}
+
+    mu_to_cm = 1e-4
+    mu2_to_cm2 = 1e-8
+
+    frustum_surface = conical_frustum_surface(soma_segments) * mu2_to_cm2
+    soma_parameters = NeuronParameters(
+        Cm = 10e3 * 0.75 * frustum_surface, # uF/cm^2 * cm^2 = uF
+        Ra = 10e-3 * 150.0 / (mu_to_cm * conical_frustum_length(soma_segments)), # ohm.cm / cm * 10e-3 = kOhm
+        na = ChannelParameter(E=50, g=20.0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        ca = ChannelParameter(E=140, g=0.3 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        kv = ChannelParameter(E=-90, g=3.0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        km = ChannelParameter(E=-90, g=200.0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        kca = ChannelParameter(E=-90, g=3.0 * frustum_surface), # mS/cm^2 * cm^2 =  mS 
+        leak = ChannelParameter(E=-70, g=0.3 * frustum_surface), # frustum_surface * 1/30000.0), # mS/cm^2 * cm^2 = mS
         ca_infty = 0.1, # uM
-        tau_ca = 200, # ms
+        tau_ca = 200.0, # ms
     )
-    frustum_surface = conical_frustum_surface(dendritic_segments)
-    dendritic_parameters = DendriticParameters(
-        na = ChannelParameter(E=50, g=20 * frustum_surface), # mS/cm^2 * um^2 = mS
-        ca = ChannelParameter(E=140, g=0.3 * frustum_surface), # mS/cm^2 * um^2 = mS
-        kv = ChannelParameter(E=-90, g=3 * frustum_surface), # mS/cm^2 * um^2 = mS
-        kca = ChannelParameter(E=-90, g=3 * frustum_surface), # mS/cm^2 * um^2 = mS
-        leak = ChannelParameter(E=-70, g=1/30000.0 * frustum_surface), # mS/cm^2 * um^2 = mS    
+    frustum_surface = conical_frustum_surface(dendritic_segments) * mu2_to_cm2
+    dendritic_parameters = NeuronParameters(
+        Cm = 10e3 * 0.75 * frustum_surface * mu2_to_cm2,
+        Ra = 10e-3 * 150.0 / (mu_to_cm * conical_frustum_length(dendritic_segments)),
+        na = ChannelParameter(E=50, g=20.0 * frustum_surface),
+        kv = ChannelParameter(E=-90, g=3.0 * frustum_surface),
+        km = ChannelParameter(E=-90, g=0 * frustum_surface),  
+        ca = ChannelParameter(E=140, g=0.3 * frustum_surface),
+        kca = ChannelParameter(E=-90, g=3 * frustum_surface), 
+        leak = ChannelParameter(E=-70, g=0.3 * frustum_surface),  
         ca_infty = 0.1, # uM
-        tau_ca = 200, # ms
+        tau_ca = 200.0, # ms
     )
-    frustum_surface = conical_frustum_surface(axon_segments)
-    axon_hillock_parameters = AxonhillockParameters(
-        na = ChannelParameter(E=50, g=30000 * frustum_surface), # mS/cm^2 * um^2 = mS
-        kv = ChannelParameter(E=-90, g=2000 * frustum_surface), # mS/cm^2 * um^2 = mS
-        leak = ChannelParameter(E=-70, g=1/50.0* frustum_surface) # mS/cm^2 * um^2 = mS
+    frustum_surface = conical_frustum_surface(axon_segments) * mu2_to_cm2
+    axon_hillock_parameters = NeuronParameters(
+        Cm = 10e3 * 0.75 * frustum_surface * mu2_to_cm2, # uF/cm^2 * cm^2 = uF
+        Ra = 10e-3 * 150.0 / (mu_to_cm * conical_frustum_length(axon_segments)), # ohm.cm / cm * 10e-3 = kOhm
+        na = ChannelParameter(E=50, g=30000.0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        kv = ChannelParameter(E=-90, g=2000.0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        leak = ChannelParameter(E=-70, g=1/50.0* frustum_surface), # mS/cm^2 * cm^2 = mS
+        km = ChannelParameter(E=-90, g=0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        ca = ChannelParameter(E=140, g=0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        kca = ChannelParameter(E=-90, g=0 * frustum_surface), # mS/cm^2 * cm^2 = mS
+        ca_infty = 0.1, # uM
+        tau_ca = 200.0, # ms
     )
+
+    def concatenate_channel_parameters(c1: ChannelParameter, c2: ChannelParameter, c3: ChannelParameter):
+        assert(c1.E == c2.E and c2.E == c3.E)
+        return ChannelParameter(
+            E = c1.E,
+            g = jp.concatenate((c1.g, c2.g, c3.g))
+        )
+
+    # NOTE: The ordering does matter here !
     neuron_parameters = NeuronParameters(
-        Cm = CompartmentParameter(
-            soma = 0.75 * conical_frustum_surface(soma_segments), # uF/cm^2 * um^2 = 10^(-4) uF
-            dendritic = 0.75 * conical_frustum_surface(dendritic_segments), # uF/cm^2 * um^2 = 10^(-4) uF
-            axon_hillock = 0.75 * conical_frustum_surface(axon_segments), # uF/cm^2 * um^2 = 10^(-4) uF
+        Cm = 0.75 * conical_frustum_surface(segments) * mu2_to_cm2, # uF/cm^2 * cm^2 = uF
+        Ra = 150.0 / (mu_to_cm * conical_frustum_length(segments)), # ohm.cm / cm = ohm
+        na = concatenate_channel_parameters(
+            soma_parameters.na,
+            axon_hillock_parameters.na,
+            dendritic_parameters.na
         ),
-        Ra = CompartmentParameter(
-            soma = 150 / conical_frustum_length(soma_segments), # ohm.cm / um = 10^4 ohm
-            dendritic = 150 / conical_frustum_length(dendritic_segments), # ohm.cm / um = 10^4 ohm
-            axon_hillock = 150 / conical_frustum_length(axon_segments), # ohm.cm / um = 10^4 ohm
+        ca = concatenate_channel_parameters(
+            soma_parameters.ca,
+            axon_hillock_parameters.ca,
+            dendritic_parameters.ca
         ),
-        soma = soma_parameters,
-        dendritic = dendritic_parameters,
-        axon_hillock = axon_hillock_parameters
+        kv = concatenate_channel_parameters(
+            soma_parameters.kv,
+            axon_hillock_parameters.kv,
+            dendritic_parameters.kv
+        ),
+        km = concatenate_channel_parameters(
+            soma_parameters.km,
+            axon_hillock_parameters.km,
+            dendritic_parameters.km
+        ),
+        kca = concatenate_channel_parameters(
+            soma_parameters.kca,
+            axon_hillock_parameters.kca,
+            dendritic_parameters.kca
+        ),
+        leak = concatenate_channel_parameters(
+            soma_parameters.leak,
+            axon_hillock_parameters.leak,
+            dendritic_parameters.leak
+        ),
+        ca_infty = soma_parameters.ca_infty,
+        tau_ca = soma_parameters.tau_ca
     )
 
-    print(neuron_parameters.Ra.soma.shape)
-    print(neuron_parameters.Ra.dendritic.shape)
+    def initial_channel_state(v: jp.ndarray, ca_i: jp.ndarray):
+        # return equilibrium 
+        return MembraneChannels(
+            na = na_equilibrium(v),
+            ca = ca_equilibrium(v),
+            kv = kv_equilibrium(v),
+            km = km_equilibrium(v),
+            kca = kca_equilibrium(v, ca_i)
+        )
 
-    # Cm = jp.concatenate([neuron_parameters.Cm.soma, neuron_parameters.Cm.dendritic, neuron_parameters.Cm.axon_hillock])
-    Ra = jp.concatenate([neuron_parameters.Ra.soma, neuron_parameters.Ra.dendritic, neuron_parameters.Ra.axon_hillock])                        
-    conductance_matrix = compute_conductance_matrix(1/Ra, parent)
-
+    conductance_matrix = compute_conductance_matrix(1.0/neuron_parameters.Ra, parent)
     model = NeuronModel(
         parameters=neuron_parameters,
-        conductance_matrix=conductance_matrix
+        conductance_matrix=conductance_matrix,
+        tm=compute_tree_conductance_matrix(1.0/neuron_parameters.Ra, parent)
+    )
+    initial_state = NeuronState(
+        v = neuron_parameters.leak.E * jp.ones_like(neuron_parameters.Ra),
+        ca_i = neuron_parameters.ca_infty * jp.ones_like(neuron_parameters.Ra),
+        channels = initial_channel_state(neuron_parameters.leak.E * jp.ones_like(neuron_parameters.Ra), neuron_parameters.ca_infty * jp.ones_like(neuron_parameters.Ra))
     )
 
     
+    dt = 0.001
+    inner_steps = 1
+    outer_steps = 10000
+    time = dt * inner_steps * (1 + np.arange(outer_steps))
+
+    from jax import config
+    config.update("jax_debug_nans", True)
+    config.update("jax_enable_x64", True)
+
+    semi_implicit_step = implicit.imex_rk_sil3(model, dt)
+    integrator = funcutils.trajectory(
+        funcutils.repeated(semi_implicit_step, inner_steps), outer_steps
+    )
+    integrator = jax.jit(integrator)
+    _, actual = integrator(initial_state)
+
+    import matplotlib.pyplot as plt
+
+
+    fig, ax = plt.subplots(1,3)
+    ax[0].plot(time, actual.v)
+    ax[1].plot(time, actual.ca_i)
+    fig.savefig("test.png", dpi=400)
+
 
 
 

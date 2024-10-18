@@ -2,7 +2,6 @@ from functools import partial
 
 import jax
 import jax.numpy as np
-from jax.config import config
 from numpy.testing import assert_almost_equal
 
 from jaxsnn.event.leaky_integrate import LIFParameters, LIFState
@@ -119,7 +118,7 @@ def test_nan():
         ),
     )
 
-    config.update("jax_debug_nans", True)
+    jax.config.update("jax_debug_nans", True)
 
     solver = partial(ttfs_solver, p.tau_mem, p.v_th)
     batched_solver = jax.jit(jax.vmap(solver, in_axes=(0, None)))

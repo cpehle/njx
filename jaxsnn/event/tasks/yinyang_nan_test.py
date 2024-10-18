@@ -11,10 +11,9 @@ from jaxsnn.event.leaky_integrate_and_fire import LIF, LIFParameters
 from jaxsnn.event.root import ttfs_solver
 from jaxsnn.event.utils import load_params
 
-from jax.config import config
 
 
-config.update("jax_debug_nans", True)
+jax.config.update("jax_debug_nans", True)
 
 
 def test_nans():

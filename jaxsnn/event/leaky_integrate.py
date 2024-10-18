@@ -39,7 +39,7 @@ def LeakyIntegrator(
     std: float = 2.0,
     time_steps: int = 20,
 ):
-    def init_fn(rng: jax.random.KeyArray, input_shape: int):
+    def init_fn(rng, input_shape: int):
         return n_hidden, jax.random.normal(rng, (input_shape, n_hidden)) * std + mean
 
     ts = np.linspace(0, t_max, time_steps)

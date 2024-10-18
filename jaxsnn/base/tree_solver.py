@@ -18,11 +18,17 @@ def tree_to_matrix(d, u, p):
     N = d.shape[0]
     a = jnp.diag(d, 0)
 
-    for i in range(1, N):
-        a = a.at[p[i], i].set(u[i - 1])
-        a = a.at[i, p[i]].set(u[i - 1])
+    def body_fun(i, val):
+        val = val.at[p[i], i].set(u[i - 1])
+        val = val.at[i, p[i]].set(u[i - 1])
+        return val
 
-    return a
+    # for i in range(1, N):
+    #     a = a.at[p[i], i].set(u[i - 1])
+    #     a = a.at[i, p[i]].set(u[i - 1])
+
+    return lax.fori_loop(1, N, body_fun, a)
+
 
 
 @tree_math.struct

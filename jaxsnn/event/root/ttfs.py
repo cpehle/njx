@@ -47,3 +47,8 @@ def ttfs_solver(tau_mem: float, v_th: float, state: LIFState, dt: float):
     return lax.cond(
         has_spike, ttfs_inner, lambda *args: dt, a_1, a_2, second_term, tau_mem, dt
     )
+
+
+def linear_solver(state, a):
+    """Find the next event in the case that the dynamics is $\dot{x} = a$"""
+    return (1 - state) / a

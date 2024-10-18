@@ -1,4 +1,4 @@
-from jaxsnn.base.types import Weight, Spike
+from jaxsnn.base.types import Weight, Spike, Array
 
 import jax
 
@@ -8,7 +8,7 @@ from typing import List
 def serial(*layers):
     init_fns, apply_fns = zip(*layers)
 
-    def init_fn(rng: jax.random.KeyArray, input_shape: int) -> List[Weight]:
+    def init_fn(rng: Array, input_shape: int) -> List[Weight]:
         params = []
         for init_fn in init_fns:
             if len(init_fns) > 1:

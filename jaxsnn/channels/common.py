@@ -4,7 +4,7 @@
 # Authors: Christian Pehle
 
 import math
-
+import tree_math
 
 def channel_time_constant(alpha, beta, v_shift=0.0, q=1.0):
     def tau(v):
@@ -24,3 +24,9 @@ def channel_equilibrium(alpha, beta, v_shift=0.0):
 
 def q_conversion(target_deg_c, original_deg_c, q10):
     return math.exp(q10, (target_deg_c - original_deg_c) / 10)
+
+
+def channel_dynamics(alpha, beta):
+    def dynamics(x, voltage):
+        return alpha(voltage) * (1 - x) - beta(voltage) * x
+    return dynamics
