@@ -30,3 +30,11 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.4.25
+    hooks:
+      # Compile requirements
+      - id: pip-compile
+        args: [requirements.in, -o, requirements.txt]

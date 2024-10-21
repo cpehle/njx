@@ -22,7 +22,7 @@ else:
 setup(
     install_requires=install_requires,
     setup_requires=["setuptools", "wheel"],
-    name="jaxsnn",
+    name="njx",
     version="0.0.1",
     description="",
     long_description=readme_text,

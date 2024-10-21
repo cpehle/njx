@@ -15,14 +15,14 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("."))
 
 
 # -- Project information -----------------------------------------------------
 
-project = "jaxsnn"
-copyright = "2022, The JAXSNN authors."
-author = "The JAXSNN authors"
+project = "njx"
+copyright = "2024, The NJX authors."
+author = "The NJX authors"
 language = "en"
 
 # The short X.Y version
@@ -126,7 +126,7 @@ html_theme = "furo"
 html_theme_options = {
     "logo_only": True,
     "show_toc_level": 2,
-    "repository_url": "https://github.com/cpehle/jaxsnn",
+    "repository_url": "https://github.com/cpehle/njx",
     "use_repository_button": True,  # add a "link to repository" button
 }
 
@@ -168,7 +168,7 @@ nb_execution_excludepatterns = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "JAXSNNdoc"
+htmlhelp_basename = "NJXdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------

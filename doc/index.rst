@@ -1,4 +1,4 @@
-JAXSNN reference documentation
+NJX reference documentation
 ==============================
 
 .. toctree::
@@ -32,7 +32,7 @@ JAXSNN reference documentation
    :maxdepth: 1
    :caption: API documentation
 
-   jaxsnn
+   njx
 
 
 Indices and tables
@@ -41,4 +41,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
