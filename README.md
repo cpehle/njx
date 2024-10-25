@@ -1,4 +1,4 @@
-# njx
+![](doc/_static/logo.png)
 
 NJX is a library for morphologically and bio-physically detailed neuron simulations in JAX.
 
