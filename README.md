@@ -1,4 +1,6 @@
-![](doc/_static/logo.png | width=100)
+<p align="center">
+<img src="https://github.com/cpehle/njx/blob/main/doc/_static/logo.png">
+</p>
 
 NJX is a library for morphologically and bio-physically detailed neuron simulations in JAX.
 
